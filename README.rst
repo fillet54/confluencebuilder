@@ -125,6 +125,181 @@ For a complete list of supported markup, consult the following:
  | Atlassian Confluence Builder for Sphinx - Markup
  | https://sphinxcontrib-confluencebuilder.readthedocs.io/en/stable/markup.html
 
+Sphinx Tabs Support
+===================
+Using sphinx-tabs requires the following two user-macros to be installed:
+
+.. important::
+   The **Macro Name** must match exactly as listed below
+
++-----------------------+-------------------------------+
+| Field                 | Value                         |
++=======================+===============================+
+| Macro Name            | tab-container                 |
++-----------------------+-------------------------------+
+| Visibility            | Visible to all                |
++-----------------------+-------------------------------+
+| Macro Title           | Tab Container                 |
++-----------------------+-------------------------------+
+| Description           | Container which holds tabs    |
++-----------------------+-------------------------------+
+| Categories            | Formatting                    |
++-----------------------+-------------------------------+
+| Macro Body Processing | Rendered                      |
++-----------------------+-------------------------------+
+| Template              | See code-block below          |
++-----------------------+-------------------------------+
+
+.. code-block:: javascript
+
+   ## Macro title: Tab Container
+   ## Macro has a body: Y
+   ## Body processing: Selected body processing option
+   ## Output: Selected output option
+   ##
+   ## Developed by: Phillip Gomez
+   ## Date created: 04/04/2020
+   ## Installed by: Phillip Gomez
+
+   ## @noparams
+
+   <style>
+   .tabs {
+     position: relative;   
+     min-height: 200px; /* This part sucks */
+     clear: both;
+     margin: 25px 0;
+   }
+   .tab {
+     float: left;
+   }
+   .tab label {
+     background: #eee; 
+     padding: 10px; 
+     border: 1px solid #ccc; 
+     margin-left: -1px; 
+     position: relative;
+     left: 1px; 
+     border-radius: 5px;
+   }
+   .tab [type=radio] {
+     display: none;   
+   }
+   .content {
+     position: absolute;
+     top: 28px;
+     left: 0;
+     background: white;
+     right: 0;
+     bottom: 0;
+     padding: 20px;
+     border: 1px solid #ccc; 
+   }
+   [type=radio]:checked ~ label {
+     background: white;
+     border-bottom: 1px solid white;
+     z-index: 2;
+   }
+   [type=radio]:checked ~ label ~ .content {
+     z-index: 1;
+   }
+   </style>
+
+   <div class="tabs">
+      $body
+   </div>
+   <script type="text/javascript">
+   if (typeof tabGroupId === 'undefined')
+      var tabGroupId = 1;
+   else
+      tabGroupId = tabGroupId + 1;
+
+   var scripts = document.getElementsByTagName('script'),
+       currentScript = scripts[scripts.length - 1],
+       tabGroup;
+
+       while ( true ) {
+          tabGroup = currentScript.previousSibling;
+
+          if ( tabGroup.classList && tabGroup.classList.contains("tabs") )
+             break;
+
+          currentScript = tabGroup;
+       }
+
+       var tabs= tabGroup.children,
+              maxHeight= 0;
+       for (var i = 0; i < tabs.length; i++) {
+          var tab= tabs[i],
+                tabInput = tab.children[0],
+                tabLabel = tab.children[1],
+                content = tab.children[2];
+                innerContent = content.children[0];
+
+          var id = "tab-group-" + tabGroupId + "-tab-" + (i + 1);
+          tabInput.id = id;
+          tabInput.name = "tag-group-" + tabGroupId;
+          tabLabel.setAttribute( "for", id );
+
+          // select first tab
+          if ( i == 0 )
+              tabInput.checked = true;
+
+          // keep track of maxHeight
+          if ( innerContent.offsetHeight > maxHeight )
+             maxHeight = innerContent.offsetHeight; 
+       }
+
+       var menuAndPadding = 41 + 2*12,   // Menu Height + padding
+             actualHeight = menuAndPadding + maxHeight; // this is for the actual tabs on top and padding
+       tabGroup.style.minHeight = "" + actualHeight  + "px";
+
+   </script>
+
+
++-----------------------+-------------------------------+
+| Field                 | Value                         |
++=======================+===============================+
+| Macro Name            | tab-item                      |
++-----------------------+-------------------------------+
+| Visibility            | Visible to all                |
++-----------------------+-------------------------------+
+| Macro Title           | Tab Item                      |
++-----------------------+-------------------------------+
+| Description           | Individual Tab                |
++-----------------------+-------------------------------+
+| Categories            | Formatting                    |
++-----------------------+-------------------------------+
+| Macro Body Processing | Rendered                      |
++-----------------------+-------------------------------+
+| Template              | See code-block below          |
++-----------------------+-------------------------------+
+
+.. code-block:: javascript
+
+   ## Macro title: Tab Item
+   ## Macro has a body: Y
+   ## Body processing: Selected body processing option
+   ## Output: Selected output option
+   ##
+   ## Developed by: Phillip Gomez
+   ## Date created: 04/04/2020
+   ## Installed by: Phillip
+
+   ## @param Title:title=Title|type=string|required=true|desc=Tab Title
+
+   <div class="tab">
+          <input type="radio">
+          <label>$webwork.htmlEncode($paramTitle)</label>
+
+          <div class="content">
+              <div>
+              $body
+              </div>
+          </div> 
+   </div>
+
+
 .. _Confluence: https://www.atlassian.com/software/confluence
 .. _Python: https://www.python.org/
 .. _Requests: https://pypi.python.org/pypi/requests

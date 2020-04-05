@@ -218,11 +218,13 @@ class ConfluenceTranslator(BaseTranslator):
             self.body.append(self.context.pop()) # h<x>
 
     def visit_paragraph(self, node):
-        self.body.append(self._start_tag(node, 'p'))
-        self.context.append(self._end_tag(node))
+        if not self._inTabLink():
+            self.body.append(self._start_tag(node, 'p'))
+            self.context.append(self._end_tag(node))
 
     def depart_paragraph(self, node):
-        self.body.append(self.context.pop()) # p
+        if not self._inTabLink():
+            self.body.append(self.context.pop()) # p
 
     def visit_transition(self, node):
         self.body.append(self._start_tag(
@@ -1674,11 +1676,76 @@ class ConfluenceTranslator(BaseTranslator):
     def depart_compact_paragraph(self, node):
         pass
 
+    def _isTabContainer(self, node):
+        return "sphinx-tabs" in node['classes']
+
+    def _isTabItem(self, node):
+        return 'sphinx-tabs' in self.context and len(node.children) == 2 and 'sphinx-tab' in node.children[1]['classes']
+
+    def _isTabLink(self, node):
+        return 'sphinx-tab-item' in self.context and node.tagname == 'a'
+
+    def _inTabLink(self):
+        return 'sphinx-tab-link' in self.context
+
     def visit_container(self, node):
-        pass
+        # I can't imagine this is a good way to structure a builder but tab
+        # support is almost entirely contained
+        # This probably could be easier with better formulated output from
+        # sphinx-tabs but I dont want to have to change the sphinx-tabs
+        # directive
+
+        # outer tab container
+        if self._isTabContainer(node):
+            self.context.append("sphinx-tabs")
+            self.body.append(self._start_ac_macro(node, 'tab-container'))
+            self.context.append(self._end_ac_macro(node))
+
+            self.body.append(self._build_ac_parameter(node, "atlassian-macro-output-type", "INLINE"))
+            self.body.append(self._start_ac_rich_text_body_macro(node))
+            self.context.append(self._end_ac_rich_text_body_macro(node))
+
+        # tab item
+        elif self._isTabItem(node):
+            self.context.append("sphinx-tab-item")
+            self.body.append(self._start_ac_macro(node, 'tab-item'))
+            self.context.append(self._end_ac_macro(node))
+
+            start = self._start_ac_rich_text_body_macro(node)
+            end = self._end_ac_rich_text_body_macro(node)
+            self.context.append(end)
+            self.context.append(start)
+
+
+        # tab link
+        elif self._isTabLink(node):
+            self.context.append("sphinx-tab-link")
+
+            # reset body so we can collect it
+            self.context.append(self.body)
+            self.body = []
 
     def depart_container(self, node):
-        pass
+        if self._isTabContainer(node):
+            self.body.append(self.context.pop())
+            self.body.append(self.context.pop())
+            self.context.pop() # remove sphinx-tabs
+        elif self._isTabItem(node):
+            self.body.append(self.context.pop())
+            self.body.append(self.context.pop())
+            self.context.pop() # remove sphinx-tab-item
+        elif self._isTabLink(node):
+            tabTitle = "".join(map(str, self.body))
+            self.body = self.context.pop()
+            self.context.pop() # remove sphonx-tab-link
+
+            # add the Title Parameter
+            self.body.append(self._build_ac_parameter(node, "Title", tabTitle))
+            self.body.append(self._build_ac_parameter(node, "atlassian-macro-output-type", "INLINE"))
+
+            # Should be the rich text start
+            self.body.append(self.context.pop())
+
 
     def visit_generated(self, node):
         pass
