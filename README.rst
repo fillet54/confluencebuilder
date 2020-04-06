@@ -209,50 +209,101 @@ Using sphinx-tabs requires the following two user-macros to be installed:
       $body
    </div>
    <script type="text/javascript">
-   if (typeof tabGroupId === 'undefined')
-      var tabGroupId = 1;
-   else
-      tabGroupId = tabGroupId + 1;
 
-   var scripts = document.getElementsByTagName('script'),
-       currentScript = scripts[scripts.length - 1],
-       tabGroup;
+      if (typeof window.confluence_tabs === 'undefined') {
+          window.confluence_tabs = {
 
-       while ( true ) {
-          tabGroup = currentScript.previousSibling;
+              groupId: 1,
+              MENU_HEIGHT: 41,
+              PADDING: 12,
 
-          if ( tabGroup.classList && tabGroup.classList.contains("tabs") )
-             break;
+              setTabContainerHeight: function(group, count) {
+                  var tabGroup = group;
 
-          currentScript = tabGroup;
-       }
 
-       var tabs= tabGroup.children,
-              maxHeight= 0;
-       for (var i = 0; i < tabs.length; i++) {
-          var tab= tabs[i],
-                tabInput = tab.children[0],
-                tabLabel = tab.children[1],
-                content = tab.children[2];
-                innerContent = content.children[0];
+                  if ( window.confluence_tabs.imagesLoaded(tabGroup) ) {
+                      var tabs = tabGroup.children,
+                          maxHeight = 0,
+                          otherHeight = window.confluence_tabs.MENU_HEIGHT + 2*window.confluence_tabs.PADDING;
 
-          var id = "tab-group-" + tabGroupId + "-tab-" + (i + 1);
-          tabInput.id = id;
-          tabInput.name = "tag-group-" + tabGroupId;
-          tabLabel.setAttribute( "for", id );
 
-          // select first tab
-          if ( i == 0 )
-              tabInput.checked = true;
+                      for (var i = 0; i < tabs.length; i++) {
+                          var innerContent = tabs[i].children[2].children[0];
+                          if (innerContent.offsetHeight > maxHeight)
+                              maxHeight = innerContent.offsetHeight;
+                      }
 
-          // keep track of maxHeight
-          if ( innerContent.offsetHeight > maxHeight )
-             maxHeight = innerContent.offsetHeight; 
-       }
+                      tabGroup.style.minHeight = "" + (otherHeight + maxHeight) + "px";
+                  }
+                  else {
+                      var timeout = count < 10 ? 50 : 500;
+                      setTimeout( function() { 
+                          window.confluence_tabs.setTabContainerHeight(tabGroup, count+1);
+                      }, timeout);
+                  }
+              },
 
-       var menuAndPadding = 41 + 2*12,   // Menu Height + padding
-             actualHeight = menuAndPadding + maxHeight; // this is for the actual tabs on top and padding
-       tabGroup.style.minHeight = "" + actualHeight  + "px";
+              imagesLoaded: function (tabGroup) {
+                  var allImages = tabGroup.getElementsByTagName("img"),
+                      complete = true;
+
+                  for (var i = 0; i < allImages.length; i++) {
+                      complete = complete && allImages[i].complete;
+                      if (!complete)
+                          break;
+                  }
+                  return complete;
+              },
+
+              getTabGroup: function() {
+                  // since this script is inline this can assume we are last in
+                  // the list of scripts
+
+                  var scripts = document.getElementsByTagName('script'),
+                      currentScript = scripts[scripts.length - 1],
+                      tabGroup;
+
+                  while (true) {
+                      tabGroup = currentScript.previousSibling;
+
+                      // Sometimes text gets inbetween
+                      if (tabGroup.classList && tabGroup.classList.contains("tabs"))
+                          break;
+
+                      currentScript = tabGroup;
+                  }
+                  return tabGroup;
+              },
+
+              initTabs: function() {
+                  var tabGroup = window.confluence_tabs.getTabGroup(),
+                      tabGroupId = window.confluence_tabs.groupId;
+                      tabs = tabGroup.children;
+
+                  // Increment group ID for next macro use on page
+                  window.confluence_tabs.groupId++;
+
+                  for (var i = 0; i < tabs.length; i++) {
+                      var tab = tabs[i],
+                          tabInput = tab.children[0],
+                          tabLabel = tab.children[1],
+                          id = "tab-group-" + tabGroupId + "-tab-" + (i + 1);
+
+                      tabInput.id = id;
+                      tabInput.name = "tag-group-" + tabGroupId;
+                      tabLabel.setAttribute("for", id);
+
+                      // select first tab
+                      if (i == 0)
+                          tabInput.checked = true;
+                  }
+              }
+          };
+      }
+
+      window.confluence_tabs.initTabs();
+
+      window.confluence_tabs.setTabContainerHeight(window.confluence_tabs.getTabGroup(), 0);
 
    </script>
 
