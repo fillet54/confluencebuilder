@@ -181,8 +181,7 @@ Using sphinx-tabs requires the following two user-macros to be installed:
      margin-left: -1px; 
      position: relative;
      left: 1px; 
-     border-top-left-radius: 5px;
-     border-top-right-radius: 5px;
+     border-radius: 5px 5px 0 0;
    }
    .tab [type=radio] {
      display: none;   
@@ -199,7 +198,7 @@ Using sphinx-tabs requires the following two user-macros to be installed:
    }
    [type=radio]:checked ~ label {
      background: white;
-     border-bottom: 1px solid white;
+     border-bottom: none; 
      z-index: 2;
    }
    [type=radio]:checked ~ label ~ .content {
